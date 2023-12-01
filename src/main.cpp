@@ -3,6 +3,7 @@
 #include <MCUFRIEND_kbv.h>
 #include <mcp2515.h>
 #include <String.h>
+#include <fonts/FreeSansBold12pt7b.h>
 
 #define BLACK 0x0000
 #define NAVY 0x000F
@@ -32,7 +33,8 @@ MCUFRIEND_kbv tft;
 int gearPos = 0;
 uint32_t rpmSpeed = 0;
 String rpmString = "";
-char *endptr;
+String rpmDisp = "";
+
 
 /* Function for reconstructing hexadecimal string */
 void swap(char &a, char &b) {
@@ -49,8 +51,8 @@ int calcRPM(String hexVal) {
   // Initializing base value to 1, i.e 16^0 
   int base = 1; 
   
-  int dec_val = 0; 
-  
+  int dec_val = 0;
+
   // Extracting characters as digits from last 
   // character 
   for (int i = len - 1; i >= 0; i--) { 
@@ -74,8 +76,8 @@ int calcRPM(String hexVal) {
           base = base * 16; 
         } 
     } 
-    return dec_val / 6; 
 
+    return dec_val / 6;
 }
 
 /* Function to pack CAN data back into hex format */
@@ -124,9 +126,10 @@ void setup() {
   
   //Initializing TFT display:
   tft.begin(ID);
-  tft.invertDisplay(1);
+  tft.invertDisplay(0);
   tft.setRotation(1);
   tft.fillScreen(BLACK);
+  tft.setFont(&FreeSansBold12pt7b);
 
 // Initializing CAN module
   mcp2515.reset();
@@ -136,19 +139,101 @@ void setup() {
 }
 
 void loop() {
+if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
 
-  if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
+    tft.drawTriangle(190, 150, 305, 150, 250, 20, RED);
+    tft.setCursor(225, 135);
+    tft.setTextSize(5);
+    tft.setTextColor(RED, BLACK);
+    tft.print("!");
+
+    tft.setTextSize(2);
+    tft.setCursor(80, 235);
+    tft.print("no CAN data!");
+  }
+
+  else {
 
     tft.fillScreen(BLACK);
-      tft.setCursor(215, 90);
-      tft.setTextSize(15);
-      tft.setTextColor(RED, BLACK);
-      tft.print("!");
+    while(mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
-      tft.setTextSize(5);
-      tft.setCursor(80, 235);
-      tft.print("no CAN data!");
+      gearPos = canMsg.data[0];
+         if (gearPos == 0) {
+           tft.setCursor(205, 280);
+           tft.setTextColor(WHITE, BLACK);
+           tft.setTextSize(6);
+           tft.print("N");
+         }
+         else {
+            tft.setCursor(205, 280);
+           tft.setTextColor(WHITE, BLACK);
+           tft.setTextSize(6);
+           tft.print(gearPos);
+         }
+      
+
+      tft.setCursor(120, 125);
+      tft.setTextSize(2);
+      tft.setTextColor(WHITE, BLACK);
+      tft.print("RPM ");
+
+      rpmString = decToHex(canMsg.data[1]);
+      rpmString += decToHex(canMsg.data[2]);
+      rpmString += decToHex(canMsg.data[3]);
+      rpmString += decToHex(canMsg.data[4]); 
+
+      rpmSpeed = calcRPM(rpmString);
+      rpmDisp = String(rpmSpeed);
+      while (rpmDisp.length() > 4)
+        rpmDisp = "0" + rpmDisp;
+      
+      tft.setCursor(235, 95);
+      tft.setTextSize(2);
+      tft.setTextColor(WHITE, BLACK);
+      tft.print(rpmDisp);
+      
+
+      if(gearPos == 1 || gearPos == 0) {
+
+        if(rpmSpeed <= 8000) 
+          tft.fillRect(2,2,480,85,GREEN);
+        else if (rpmSpeed > 8000 && rpmSpeed <= 8800)
+          tft.fillRect(2,2,480,85,YELLOW);
+        else if (rpmSpeed > 8800 && rpmSpeed <= 8900)
+          tft.fillRect(2,2,480,85,RED);
+
+      }
+      else if(gearPos != 1 && gearPos != 0) {
+
+         if(rpmSpeed >= 6000 && rpmSpeed <= 8000) 
+            tft.fillRect(2,2,480,85,GREEN);
+          else if (rpmSpeed > 8000 && rpmSpeed <= 8800)
+            tft.fillRect(2,2,480,85,YELLOW);
+          else if (rpmSpeed > 8800 && rpmSpeed <= 8900)
+            tft.fillRect(2,2,480,85,RED);
+          else
+            tft.fillRect(2,2,480,85,CYAN);
+
+      }
+    }
   }
+}
+
+/*
+
+if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
+
+    tft.drawTriangle(190, 140, 305, 140, 250, 20, RED);
+    tft.setCursor(215, 125);
+    tft.setTextSize(5);
+    tft.setTextColor(RED, BLACK);
+    tft.print("!");
+
+    tft.setTextSize(2);
+    tft.setCursor(80, 235);
+    tft.print("no CAN data!");
+  }
+
   else {
 
     tft.fillScreen(BLACK);
@@ -213,4 +298,25 @@ void loop() {
       }
     }
   }
-}
+
+*/
+
+
+/*
+    tft.fillRect(2,2,480,85,GREEN);
+
+    tft.setCursor(120, 125);
+    tft.setTextSize(2);
+    tft.setTextColor(WHITE, BLACK);
+    tft.print("RPM ");
+
+    tft.setCursor(275, 125);
+    tft.setTextSize(2);
+    tft.setTextColor(WHITE, BLACK);
+    tft.print("0");
+
+    tft.setCursor(205, 280);
+    tft.setTextColor(WHITE, BLACK);
+    tft.setTextSize(6);
+    tft.print("N");
+*/
