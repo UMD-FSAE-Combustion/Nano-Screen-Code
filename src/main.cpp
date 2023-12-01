@@ -150,6 +150,7 @@ void loop() {
 if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
 
     /* If no CAN data is being recieved, this warning flashes */
+    tft.fillScreen(BLACK);
     tft.drawTriangle(190, 150, 305, 150, 250, 20, RED);
     tft.setCursor(225, 135);
     tft.setTextSize(5);
