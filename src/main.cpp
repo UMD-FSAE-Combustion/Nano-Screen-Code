@@ -1,3 +1,11 @@
+/*
+ *  THIS CODE IS FOR THE 3.5" TFT Display
+ *  To install this code, download and open with PlatformIO and plug in arduino
+ *  then upload to arduino.
+ *
+ *  ********DO NOT EDIT THE CODE UNLESS YOU KNOW WHAT YOU ARE DOING********
+ */
+
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
@@ -141,6 +149,7 @@ void setup() {
 void loop() {
 if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
 
+    /* If no CAN data is being recieved, this warning flashes */
     tft.drawTriangle(190, 150, 305, 150, 250, 20, RED);
     tft.setCursor(225, 135);
     tft.setTextSize(5);
@@ -154,9 +163,10 @@ if(mcp2515.readMessage(&canMsg) != MCP2515::ERROR_OK) {
 
   else {
 
+    /* Processing the RPM speed and driving the display */
     tft.fillScreen(BLACK);
     while(mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-
+      
       gearPos = canMsg.data[0];
          if (gearPos == 0) {
            tft.setCursor(205, 280);
